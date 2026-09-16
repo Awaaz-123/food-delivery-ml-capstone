@@ -1,4 +1,4 @@
-#  Food Delivery & Restaurant Analysis — Machine Learning Capstone
+# 🚴 Food Delivery & Restaurant Analysis — Machine Learning Capstone
 
 **Course**: 23CSE301 Machine Learning — Capstone Project  
 **Academic Year**: 2026-27  
@@ -76,7 +76,7 @@ jupyter notebook
 
 ---
 
-## 🚀 Launching the Interactive GUI App 
+## 🚀 Launching the Interactive GUI App (Bonus +2 Marks)
 
 Run the Streamlit application locally:
 ```bash
