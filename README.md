@@ -1,4 +1,4 @@
-# 🚴 Food Delivery & Restaurant Analysis — Machine Learning Capstone
+#  Food Delivery & Restaurant Analysis — Machine Learning Capstone
 
 **Course**: 23CSE301 Machine Learning — Capstone Project  
 **Academic Year**: 2026-27  
