@@ -19,7 +19,6 @@ using Machine Learning models trained on real-world food delivery telemetry data
 # Load Trained Model and Preprocessing Objects
 @st.cache_resource
 def load_ml_assets():
-    # Detect path whether running from app/ directory or root directory
     base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     model_path = os.path.join(base_dir, 'models', 'best_regression_model.pkl')
     scaler_path = os.path.join(base_dir, 'models', 'scaler.pkl')
@@ -27,8 +26,8 @@ def load_ml_assets():
     
     if os.path.exists(model_path):
         model = joblib.load(model_path)
-        scaler = joblib.load(scaler_path)
-        features = joblib.load(features_path)
+        scaler = joblib.load(scaler_path) if os.path.exists(scaler_path) else None
+        features = joblib.load(features_path) if os.path.exists(features_path) else None
         return model, scaler, features
     return None, None, None
 
@@ -52,26 +51,32 @@ festival = st.sidebar.selectbox("Festival Period", ["No", "Yes"])
 st.subheader("🔮 Machine Learning Prediction Results")
 
 if model is not None and feature_names is not None:
-    # Build Raw User Input DataFrame
-    raw_input = pd.DataFrame([{
-        'Delivery_person_Age': delivery_age,
-        'Delivery_person_Ratings': delivery_rating,
-        'distance_km': distance_km,
-        'multiple_deliveries': multiple_deliveries,
-        'Weatherconditions': weather_condition,
-        'Road_traffic_density': traffic_density,
-        'Type_of_order': order_type,
-        'Type_of_vehicle': vehicle_type,
-        'Festival': festival,
-        'City': city_type
-    }])
+    # Build 1-row DataFrame initialized with zeros matching trained feature columns
+    input_df = pd.DataFrame(0.0, index=[0], columns=feature_names)
     
-    # One-Hot Encoding and Column Alignment with Trained Model
-    input_encoded = pd.get_dummies(raw_input, drop_first=True)
-    input_aligned = input_encoded.reindex(columns=feature_names, fill_value=0)
+    # Set numerical features
+    if 'Delivery_person_Age' in feature_names: input_df.loc[0, 'Delivery_person_Age'] = float(delivery_age)
+    if 'Delivery_person_Ratings' in feature_names: input_df.loc[0, 'Delivery_person_Ratings'] = float(delivery_rating)
+    if 'distance_km' in feature_names: input_df.loc[0, 'distance_km'] = float(distance_km)
+    if 'multiple_deliveries' in feature_names: input_df.loc[0, 'multiple_deliveries'] = float(multiple_deliveries)
+    if 'prep_time_min' in feature_names: input_df.loc[0, 'prep_time_min'] = 10.0
+    if 'order_hour' in feature_names: input_df.loc[0, 'order_hour'] = 18.0
     
-    # Make Prediction using Trained Gradient Boosting Model
-    predicted_time = model.predict(input_aligned)[0]
+    # Set one-hot categorical features cleanly
+    for col_prefix, val in [
+        ('Road_traffic_density', traffic_density.strip()),
+        ('Weatherconditions', weather_condition.strip()),
+        ('Type_of_order', order_type.strip()),
+        ('Type_of_vehicle', vehicle_type.strip()),
+        ('Festival', festival.strip()),
+        ('City', city_type.strip())
+    ]:
+        dummy_col = f"{col_prefix}_{val}"
+        if dummy_col in feature_names:
+            input_df.loc[0, dummy_col] = 1.0
+
+    # Predict delivery time using trained model
+    predicted_time = model.predict(input_df)[0]
     estimated_time = int(round(predicted_time))
 else:
     # Fallback heuristic calculation if model file not found
@@ -100,7 +105,7 @@ with col3:
 st.markdown("---")
 st.subheader("📋 Input Parameter Summary")
 
-input_df = pd.DataFrame([{
+input_df_summary = pd.DataFrame([{
     "Distance (km)": distance_km,
     "Delivery Driver Age": delivery_age,
     "Driver Rating": delivery_rating,
@@ -111,4 +116,4 @@ input_df = pd.DataFrame([{
     "City": city_type
 }])
 
-st.dataframe(input_df, use_container_width=True)
+st.dataframe(input_df_summary, use_container_width=True)
